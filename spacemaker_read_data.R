@@ -2,13 +2,17 @@ library(jsonlite) ## for json read
 library(stringr) ## for str split
 library(tidyr) ## for spread function
 
-#json1<-fromJSON(txt="~/Desktop/FSU/industry_project/data/non_specific_training_data.json")
+#Read the JSON file. The JSON file has to be inside data directory in the working directory for this code to work
 json1<-fromJSON(txt="data/non_specific_training_data.json")
 json1<-data.frame(number = unlist(json1))
+# the unlist function changes the list format and adds data as rows. 
+# Also gives rownames that have all the strings attached by "."
+# Using strsplit by . and transform into columns
 json1$scenario<-lapply(strsplit(as.character(rownames(json1)),"\\."), "[", 1)
 json1$id<-lapply(strsplit(as.character(rownames(json1)), "\\."), "[", 2)
 json1$path<-lapply(strsplit(as.character(rownames(json1)), "\\."), "[", 3)
 rownames(json1)<-NULL
+# Use spread function from tidyr to change rows into columns by specific to each entry
 json_non_specific<-spread(json1, path, number)
 json_non_specific$fraction_yellow_zone <- as.numeric(as.character(json_non_specific$fraction_yellow_zone))
 
@@ -30,4 +34,4 @@ rownames(json3)<-NULL
 json_test<-spread(json3, path, number)
 json_test$fraction_yellow_zone <- as.numeric(as.character(json_test$fraction_yellow_zone))
 
-
+#rm(json1, json2, json3)
