@@ -71,4 +71,6 @@ rownames(json3)<-NULL
 json_test<-spread(json3, path, number)
 json_test$fraction_yellow_zone <- as.numeric(as.character(json_test$fraction_yellow_zone))
 
-#rm(json1, json2, json3)
+
+
+rm(json1, json2, json3)

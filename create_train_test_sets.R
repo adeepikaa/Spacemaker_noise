@@ -36,8 +36,8 @@ validation_set_y<-spec_final_set[,"fraction_yellow_zone"]
 
 # Combining x and y values into a dataframe as a train dataset
 
-train_set<-data.frame(train_set_y, train_set_x)
-
+train_set <- data.frame(train_set_y, train_set_x)
+test_set <- data.frame(validation_set_y, validation_set_x)
 
 # join train and validation set by column names (combining non-specific and specific train 
 # dataset into one)
@@ -46,8 +46,24 @@ train_set<-data.frame(train_set_y, train_set_x)
 # when the model is finally tested on the test set
 
 
-train_cross_valid_set_x<-full_join(train_set_x, validation_set_x)
-train_cross_valid_set_y<-rbind(train_set_y, validation_set_y)
+train_cross_valid_set_x<-rbind(train_set_x, validation_set_x)
+train_cross_valid_set_y<-c(train_set_y, validation_set_y)
+
+
+
+
+install.packages("caret")
+library(caret)
+
+combined_set<-data.frame(y=train_cross_valid_set_y, train_cross_valid_set_x)
+
+set.seed(123)
+
+t_index<-createDataPartition(y= combined_set$y, p=0.2, list = FALSE)
+
+testset<-combined_set[t_index,]
+trainset<-combined_set[-t_index,]
+
 
 
 
