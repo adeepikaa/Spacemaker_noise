@@ -85,17 +85,10 @@ head(non_spec_final_set)
 head(spec_final_set)
 head(test_final_set)
 
+rm(non_spec_final, spec_final, test_final, 
+   non_spec_dist_stats, spec_dist_stats, test_dist_stats, 
+   non_spec_dist_stats_t, spec_dist_stats_t, test_dist_stats_t)
 
 
 
-# 
-#non_spec_dist_stats<-mapply(create_dist_stats, json_non_specific$source_grid_path, json_non_specific$building_grid_path)
-#spec_dist_stats<-mapply(create_dist_stats, json_specific$source_grid_path, json_specific$building_grid_path)
-#test_dist_stats<-mapply(create_dist_stats, json_test$source_grid_path, json_test$building_grid_path)
-#non_spec_dist_stats_t<-t(non_spec_dist_stats)
-#spec_dist_stats_t<-t(spec_dist_stats)
-#test_dist_stats_t<-t(test_dist_stats)
 
-#rm(non_spec_final, spec_final, test_final, 
-#   non_spec_dist_stats, spec_dist_stats, test_dist_stats, 
-#   non_spec_dist_stats_t, spec_dist_stats_t, test_dist_stats_t)
