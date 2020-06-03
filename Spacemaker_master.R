@@ -95,22 +95,25 @@ rm(json1, json2, json3)
 #  PART B: Data Exploration
 #####################################
 json_non_specific$scenario<-as.character(json_non_specific$scenario)
-json_specific$scenario<-as.character(json_specific$scenario)
 
 p<-json_non_specific%>%
   group_by(scenario)%>%
-  summarize(scenario=first(scenario),avg_frac=mean(fraction_yellow_zone))%>%arrange(scenario)
+  summarize(scenario=first(scenario),avg_frac=mean(fraction_yellow_zone), .groups='drop')%>%arrange(scenario)
 
+jpeg('graphs/frac_scenarios.jpg')
 plot(p$avg_frac, xlab="Scenario 1 to 9 in order", 
      ylab="Average Fraction Yellow Zone", 
      main="Fraction Yellow Zone across different Scenarios",
      col = "dark red", cex=1, ylim=c(0,1))
+dev.off()
 
 p1<-json_non_specific%>%
   filter(scenario %in% c("scenario_6", "scenario_9"))%>%
   summarize(scenario=scenario, fraction=fraction_yellow_zone)
 p1$n<-c(1:500, 1:500)
 #p1$scenario<-as.character(p1$scenario)
+
+jpeg('graphs/frac_bldgs.jpg')
 p1%>%
   ggplot(aes(n, fraction))+
   geom_point(aes(col=scenario))+
@@ -118,18 +121,25 @@ p1%>%
   ylab("Fraction Yellow Zone")+
   ggtitle("Fraction Yellow Zone for Scenarios 6 & 9")+
   theme(legend.position="bottom")
+dev.off()
 
 #    Site configurations
 
 fraction_summary<- json_non_specific%>%
   group_by(scenario)%>%
   summarise(max_frac=max(fraction_yellow_zone), min_frac=min(fraction_yellow_zone), 
-            src=source_grid_path[fraction_yellow_zone==max_frac], bldg_max_npy=building_grid_path[fraction_yellow_zone==max_frac], bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac])
+            src=source_grid_path[fraction_yellow_zone==max_frac], 
+            bldg_max_npy=building_grid_path[fraction_yellow_zone==max_frac], 
+            bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac],
+            .groups='drop')
 fraction_summary_spec<- json_specific%>%
   summarise(max_frac=max(fraction_yellow_zone), min_frac=min(fraction_yellow_zone), 
-            src=source_grid_path[fraction_yellow_zone==max_frac], bldg_max_npy=building_grid_path[fraction_yellow_zone==max_frac], bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac])
+            src=source_grid_path[fraction_yellow_zone==max_frac], 
+            bldg_max_npy=building_grid_path[fraction_yellow_zone==max_frac], 
+            bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac], 
+            .groups='drop')
 
-create_maps <- function(x, y, z) {
+create_maps <- function(x, y, z, i) {
   input_path1 <- paste("data/", x, sep="")                       #create the path
   print(input_path1)
   srcdata <- npyLoad(input_path1, "integer") # open the file
@@ -143,13 +153,22 @@ create_maps <- function(x, y, z) {
   print(input_path3)
   min_bldg_data <- npyLoad(input_path3, "integer") 
   
+  max_file_name<-paste("graphs/maxplot_", i, ".jpeg", sep="")
+  jpeg(max_file_name)
   image(src_data+max_bldg_data, main="Grid area for max fraction yellow zone")
+  dev.off()
+  
+  min_file_name<-paste("graphs/minplot_", i, ".jpeg", sep="")
+  jpeg(min_file_name)
   image(src_data+min_bldg_data, main="Grid area for min fraction yellow zone")
+  dev.off()
+  
   return("Done")
 }
 
-mapply(create_maps, fraction_summary$src, fraction_summary$bldg_max_npy, fraction_summary$bldg_min_npy)
-mapply(create_maps, fraction_summary_spec$src, fraction_summary_spec$bldg_max_npy, fraction_summary_spec$bldg_min_npy)
+mapply(create_maps, fraction_summary$src, fraction_summary$bldg_max_npy, fraction_summary$bldg_min_npy, fraction_summary$scenario)
+i<-10
+mapply(create_maps, fraction_summary_spec$src, fraction_summary_spec$bldg_max_npy, fraction_summary_spec$bldg_min_npy, i)
 
 
 
@@ -166,13 +185,25 @@ mapply(create_maps, fraction_summary_spec$src, fraction_summary_spec$bldg_max_np
 # for the purposes of the distance features, each building has been treated as a collection of 
 # buildings at adjacent locations
 
-create_dist_stats <- function(x,y) {
+create_features <- function(x,y) {
   src_path <- paste("data/", x, sep="")
   print(src_path)
   src_file <- npyLoad(src_path, "integer")
   bldg_path <- paste("data/", y, sep="")
   print(bldg_path)
   bldg_file <- npyLoad(bldg_path, "integer")
+  
+  cov_rd <- nnzero(src_file)/length(src_file)   #calculate the coverage
+  cov_bldg <- nnzero(bldg_file)/length(bldg_file)   #calculate the coverage
+  cov_ratio<-as.numeric(cov_bldg)/as.numeric(cov_rd) #calculate ratio of covereages
+  
+  bldg_avg<-mean(bldg_file[bldg_file>0])            # calculate average building height(excludes the zeros)
+  bldg_median<-median(bldg_file[bldg_file>0])       # calculate median building height(excludes the zeros)
+  bldg_max<-max(bldg_file)                             # calculate max building height(excludes the zeros)
+  bldg_min<-min(bldg_file[bldg_file>0])             # calculate min building height(excludes the zeros)
+  bldg_diff<-bldg_max-bldg_min                            # calculate difference of max and min building height
+  
+  
   #initialize arr (array) to save a list of locations that have noise source- to null
   arr<-NULL
   for (i in 1:51){
@@ -207,8 +238,6 @@ create_dist_stats <- function(x,y) {
   ht_min_dist_rd<-mean(bldg_file[D==min_dist_rd]) # height of closest building to road
   
   
-  
-  
   # get building coverage for 4 buffer zones to portray density from road
   
   bldg_cov_rd_12<-length(D[D>0 & D<=12])/length(bldg_file)           # Zone 1 for distance less than 12 units
@@ -235,7 +264,10 @@ create_dist_stats <- function(x,y) {
   
   
   
-  return(c(avg_dist_rd=avg_dist_rd, min_dist_rd=min_dist_rd, ht_min_dist_rd=ht_min_dist_rd, 
+  return(c(cov_rd=cov_rd, cov_bldg=cov_bldg, cov_ratio=cov_ratio, 
+           bldg_avg=bldg_avg, bldg_median=bldg_median,           
+           bldg_max=bldg_max, bldg_min=bldg_min, bldg_diff=bldg_diff, 
+           avg_dist_rd=avg_dist_rd, min_dist_rd=min_dist_rd, ht_min_dist_rd=ht_min_dist_rd, 
            cov_buffer1=bldg_cov_rd_12,     cov_buffer2=bldg_cov_rd_24, #cov_buffer* measures the building covereage in the different zones
            cov_buffer3=bldg_cov_rd_36,     cov_buffer4=bldg_cov_rd_51,
            ht_buffer1=ht_avg_dist_rd_12,   ht_buffer2=ht_avg_dist_rd_24, #ht_buffer* measures the average height of the building in different zones
@@ -247,9 +279,9 @@ create_dist_stats <- function(x,y) {
 
 # Creating the distance features for non-specific, specific and test data
 
-non_spec_dist_stats<-mapply(create_dist_stats, json_non_specific$source_grid_path, json_non_specific$building_grid_path)
-spec_dist_stats<-mapply(create_dist_stats, json_specific$source_grid_path, json_specific$building_grid_path)
-test_dist_stats<-mapply(create_dist_stats, json_test$source_grid_path, json_test$building_grid_path)
+non_spec_dist_stats<-mapply(create_features, json_non_specific$source_grid_path, json_non_specific$building_grid_path)
+spec_dist_stats<-mapply(create_features, json_specific$source_grid_path, json_specific$building_grid_path)
+test_dist_stats<-mapply(create_features, json_test$source_grid_path, json_test$building_grid_path)
 
 
 # Switching the columns and the rows
@@ -258,69 +290,15 @@ non_spec_dist_stats_t<-t(non_spec_dist_stats)
 spec_dist_stats_t<-t(spec_dist_stats)
 test_dist_stats_t<-t(test_dist_stats)
 
-##########################################################################
 
-# Function to create coverage of road and coverage of building
+# Combining the features to non-specific, specific and test data
 
-create_coverage <- function(x) {
-  input_path <- paste("data/", x, sep="")                       #create the path
-  print(input_path)
-  sample_input <- npyLoad(input_path, "integer")                 # open the file
-  sample_fraction <- nnzero(sample_input)/length(sample_input)   #calculate the coverage
-  return(sample_fraction)
-}
+non_spec_final_set<-cbind(json_non_specific, non_spec_dist_stats_t)
+spec_final_set<-cbind(json_specific, spec_dist_stats_t)
+test_final_set<-cbind(json_test, test_dist_stats_t)
 
 
-
-# Function to create building features as a whole
-
-create_bldg_stats <- function(x) {
-  input_path <- paste("data/", x, sep="")
-  print(input_path)
-  sample_input <- npyLoad(input_path, "integer")
-  bldg_avg<-mean(sample_input[sample_input>0])            # calculate average building height(excludes the zeros)
-  bldg_median<-median(sample_input[sample_input>0])       # calculate median building height(excludes the zeros)
-  bldg_max<-max(sample_input)                             # calculate max building height(excludes the zeros)
-  bldg_min<-min(sample_input[sample_input>0])             # calculate min building height(excludes the zeros)
-  bldg_diff<-bldg_max-bldg_min                            # calculate difference of max and min building height
-  c(bldg_avg=bldg_avg, bldg_median=bldg_median,           # return the aggregates as a vector
-    bldg_max=bldg_max, bldg_min=bldg_min, bldg_diff=bldg_diff)
-}
-
-
-
-
-# Function to create fetaures for multiple datasets(non-specific, specific and test data)
-
-create_stats_vec<- function(set, src, bldg) {
-  set$cov_rd <- sapply(set[,src],  create_coverage)                # get road coverage
-  set$cov_bldg <- sapply(set[,bldg], create_coverage)              # get building coverage
-  set$cov_ratio<-as.numeric(set$cov_bldg)/as.numeric(set$cov_rd)   # ratio of building coverage to road coverage
-  set_stats<-sapply(set[,bldg], create_bldg_stats)                 # get building stats
-  set_stats_t<-t(set_stats)                                        # switching columns and rows
-  set_final<-cbind(set, set_stats_t)                               #merge building stats 
-  return(set_final) 
-}
-
-
-
-# Adding the features above to the non-specific, specific and test data
-
-non_spec_final<-create_stats_vec(json_non_specific, "source_grid_path", "building_grid_path")
-spec_final<-create_stats_vec(json_specific, "source_grid_path", "building_grid_path")
-test_final<-create_stats_vec(json_test, "source_grid_path", "building_grid_path")
-
-
-
-# Combining the distance features from the distance dile to non-specific, specific and test data
-
-non_spec_final_set<-cbind(non_spec_final, non_spec_dist_stats_t)
-spec_final_set<-cbind(spec_final, spec_dist_stats_t)
-test_final_set<-cbind(test_final, test_dist_stats_t)
-
-
-rm(non_spec_final, spec_final, test_final, 
-   non_spec_dist_stats, spec_dist_stats, test_dist_stats, 
+rm(non_spec_dist_stats, spec_dist_stats, test_dist_stats, 
    non_spec_dist_stats_t, spec_dist_stats_t, test_dist_stats_t)
 
 #########################################################################################
@@ -331,28 +309,34 @@ rm(non_spec_final, spec_final, test_final,
 #  PART D: Feature Exploration
 #####################################
 
-
+jpeg('graphs/frac_covrd.jpg')
 non_spec_final_set%>%
   ggplot(aes(cov_rd, fraction_yellow_zone, col=scenario))+
   geom_point()+
   xlab("Noise coverage")+
   ylab("Fraction ")+
   ggtitle("Fraction Yellow Zone Vs Noise Coverage")
+dev.off()
 
+jpeg('graphs/frac_covbldg.jpg')
 non_spec_final_set%>%
   ggplot(aes(cov_bldg, fraction_yellow_zone, col=scenario))+
   geom_point()+
   xlab("Building coverage")+
   ylab("Fraction ")+
   ggtitle("Fraction Yellow Zone Vs Building Coverage")
+dev.off()
 
+jpeg('graphs/frac_dist.jpg')
 non_spec_final_set%>%
   ggplot(aes(avg_dist_rd, fraction_yellow_zone, col=scenario))+
   geom_point()+
   xlab("Average distance to road")+
   ylab("Fraction ")+
   ggtitle("Fraction Yellow Zone Vs Average Distance to Road")
+dev.off()
 
+jpeg('graphs/frac_spec.jpg')
 spec_final_set%>%
   ggplot(aes(fraction_yellow_zone, cov_bldg, col="Building"))+
   geom_point()+
@@ -361,13 +345,16 @@ spec_final_set%>%
   xlab("Fraction ")+
   ggtitle("Fraction Yellow Zone Vs Coverage of Specific Site")+
   theme(legend.position = "bottom")
+dev.off()
 
+jpeg('graphs/frac_spec_dist.jpg')
 spec_final_set%>%
   ggplot(aes(fraction_yellow_zone, avg_dist_rd))+
   geom_point(col="blue")+
   ylab("Average distance to road")+
   xlab("Fraction ")+
   ggtitle("Fraction Yellow Zone Vs Average distance to road of Specific Site")
+dev.off()
 
 ##### Need to check the column names
 cor_table<-cor(non_spec_final_set[,c(5:28)])
@@ -376,6 +363,7 @@ cor_table_frac$feature<-rownames(cor_table_frac)
 rownames(cor_table_frac)<-NULL
 colnames(cor_table_frac)<-c("cor_frac","feature")
 
+jpeg('graphs/cor_frac.jpg')
 cor_table_frac%>%
   ggplot(aes(factor(feature), cor_frac))+
   geom_point(col="dark red")+
@@ -383,10 +371,12 @@ cor_table_frac%>%
   ylab("Correlation")+
   ggtitle("Correlation across different features")+
   theme(axis.text.x=element_text(angle=90, hjust=1))
+dev.off()
 
 col<- colorRampPalette(c("blue", "white", "red"))(20)
+jpeg('graphs/cor_heat.jpg')
 heatmap(cor_table, col=col, symm=TRUE)
-
+dev.off()
 # Listing correlations by absolute value
 cor_table_frac%>%arrange(desc(abs(cor_frac)))
 
@@ -436,4 +426,43 @@ trainset<-combined_set[-t_index,]
 test_set_x<-test_final_set[,xvalues]
 test_set_y<-test_final_set[,"fraction_yellow_zone"]
 
-#rm(t_index, set_x, set_y, col, p, p1, fraction_summary, fraction_summary_spec, cor_table, cor_table_frac)
+#rm(t_index, set_x, set_y, col, p, p1)
+
+
+#####################################
+#  PART F: Model Implementation
+#####################################
+
+
+# 1) creates the set of all the models and generates all the RMSEs for comparison
+# 2) fine tunes all the models and generates all the RMSEs for comparison
+# 3) includes cross validation where seemed fit
+
+
+# Uses BOTH the non-specific train dataset and the specific train dataset combined together as 
+# the train set and partitions it into train and test dataset
+
+#rmse_all to be used as a summary of all rmses. Initialize 
+rmse_c_all<-NULL
+
+
+# Model Number 1 : Guess model (model_guess)  RMSE: rmse_c_guess
+
+model_c_guess<-runif(length(testset$y))
+
+rmse_c_guess<-create_rmse(model_c_guess, testset$y)
+rmse_c_all<-data.frame(method="Guess", tuned="N", RMSE=rmse_c_guess)
+
+
+
+# Model Number 2: Baseline Model : Average Model (model_c_avg)  RMSE: rmse_c_avg
+
+y_c_mean <- mean(trainset$y)
+model_c_avg<-rep(y_mean, length(testset$y))
+
+rmse_c_avg<-create_rmse(model_c_avg, testset$y)
+rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N", RMSE = rmse_c_avg))
+
+rmse_c_all %>% knitr::kable()
+
+
