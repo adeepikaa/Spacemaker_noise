@@ -6,21 +6,6 @@
 # noise Surrogate model
 
 
-
-# Installing and reading packages
-
-install.packages("ggplot2")       ## ggplot
-install.packages("RcppCNPy")      ## for npyload
-install.packages("Matrix")        ## for nnzero
-install.packages("dplyr")         ## to use %>% 
-
-library(ggplot2)      
-library(RcppCNPy)      
-library(Matrix)        
-library(dplyr)         
-
-
-
 # Function to create coverage of road and coverage of building
 
 create_coverage <- function(x) {
