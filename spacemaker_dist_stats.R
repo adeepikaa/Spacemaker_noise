@@ -10,6 +10,18 @@
 
 # arguments get both *npy files src (source), bldg(building)
 
+# Installing and reading packages
+# install.packages("ggplot2")       ## ggplot
+# install.packages("RcppCNPy")      ## for npyload
+# install.packages("Matrix")        ## for nnzero
+# install.packages("dplyr")         ## to use %>% 
+
+library(ggplot2)      
+library(RcppCNPy)      
+library(Matrix)        
+library(dplyr)         
+
+
 # for the purposes of the distance features, each building has been treated as a collection of 
 # buildings at adjacent locations
 
@@ -53,17 +65,17 @@ create_dist_stats <- function(x,y) {
   
   avg_dist_rd<-mean(D[D>0])              # average of all minimum distance gives average distance from building to road
   min_dist_rd<-min(D[D>0])               # minimum distance from building to road
-  ht_min_dist_rd<-min(bldg_file[D==min_dist_rd]) # height of closest building to road
+  ht_min_dist_rd<-mean(bldg_file[D==min_dist_rd]) # height of closest building to road
   
   
   
   
   # get building coverage for 4 buffer zones to portray density from road
   
-  bldg_cov_rd_12<-sum(D[D<=12])/length(bldg_file)           # Zone 1 for distance less than 12 units
-  bldg_cov_rd_24<-sum(D[D>12 & D<=24])/length(bldg_file)    # Zone 2 for distance between 12 and 24 units
-  bldg_cov_rd_36<-sum(D[D>24 & D<=36])/length(bldg_file)    # Zone 3 for distance between 24 and 36 units
-  bldg_cov_rd_51<-sum(D[D>36])/length(bldg_file)            # Zone 4 for distance greater than 36 units
+  bldg_cov_rd_12<-length(D[D>0 & D<=12])/length(bldg_file)           # Zone 1 for distance less than 12 units
+  bldg_cov_rd_24<-length(D[D>12 & D<=24])/length(bldg_file)    # Zone 2 for distance between 12 and 24 units
+  bldg_cov_rd_36<-length(D[D>24 & D<=36])/length(bldg_file)    # Zone 3 for distance between 24 and 36 units
+  bldg_cov_rd_51<-length(D[D>36])/length(bldg_file)            # Zone 4 for distance greater than 36 units
   
   
   

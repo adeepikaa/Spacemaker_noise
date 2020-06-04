@@ -8,9 +8,9 @@
 
 # Installing and reading packages
 
-install.packages("jsonlite")
-install.packages("stringr")
-install.packages("tidyr")
+# install.packages("jsonlite")
+# install.packages("stringr")
+# install.packages("tidyr")
 
 library(jsonlite)       ## for json read
 library(stringr)        ## for str split
