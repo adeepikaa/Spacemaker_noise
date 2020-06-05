@@ -442,7 +442,7 @@ dev.off()
 
 
 # Listing correlations by absolute value
-cor_table_frac%>%arrange(desc(abs(cor_frac)))
+#cor_table_frac%>%arrange(desc(abs(cor_frac)))
 
 
 
@@ -516,6 +516,15 @@ test_set_y<-test_final_set[,"fraction_yellow_zone"]
 # 8 models: Average Baseline, Guess, KNN, SVM Radial, Regression Tree, Random Forest, Linear Regression and GamLoess                    
 
 
+
+# Function to calculate RMSE 
+
+create_rmse<-function(x,y){
+  rmse<-sqrt(sum((x-y)^2)/length(x))
+  return(rmse)
+}
+
+
 #rmse_all to be used as a summary of all rmses. Initialize 
 rmse_c_all<-NULL
 
@@ -532,7 +541,7 @@ rmse_c_all<-data.frame(method="Guess", tuned="N", RMSE=rmse_c_guess)
 # Model Number 2: Baseline Model : Average Model (model_c_avg)  RMSE: rmse_c_avg
 
 y_c_mean <- mean(trainset$y)
-model_c_avg<-rep(y_mean, length(testset$y))
+model_c_avg<-rep(y_c_mean, length(testset$y))
 
 rmse_c_avg<-create_rmse(model_c_avg, testset$y)
 rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N", RMSE = rmse_c_avg))
