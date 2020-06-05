@@ -98,7 +98,7 @@ json_non_specific$scenario<-as.character(json_non_specific$scenario)
 
 p<-json_non_specific%>%
   group_by(scenario)%>%
-  summarize(scenario=first(scenario),avg_frac=mean(fraction_yellow_zone), .groups='drop')%>%arrange(scenario)
+  summarize(avg_frac=mean(fraction_yellow_zone), .groups='drop')%>%arrange(scenario)
 
 jpeg('graphs/frac_scenarios.jpg')
 plot(p$avg_frac, xlab="Scenario 1 to 9 in order", 
@@ -109,7 +109,7 @@ dev.off()
 
 p1<-json_non_specific%>%
   filter(scenario %in% c("scenario_6", "scenario_9"))%>%
-  summarize(scenario=scenario, fraction=fraction_yellow_zone)
+  select(scenario=scenario, fraction=fraction_yellow_zone)
 p1$n<-c(1:500, 1:500)
 #p1$scenario<-as.character(p1$scenario)
 
@@ -378,7 +378,7 @@ jpeg('graphs/cor_heat.jpg')
 heatmap(cor_table, col=col, symm=TRUE)
 dev.off()
 # Listing correlations by absolute value
-cor_table_frac%>%arrange(desc(abs(cor_frac)))
+# cor_table_frac%>%arrange(desc(abs(cor_frac)))
 
 
 #####################################
@@ -442,6 +442,8 @@ test_set_y<-test_final_set[,"fraction_yellow_zone"]
 # Uses BOTH the non-specific train dataset and the specific train dataset combined together as 
 # the train set and partitions it into train and test dataset
 
+
+
 #rmse_all to be used as a summary of all rmses. Initialize 
 rmse_c_all<-NULL
 
@@ -451,7 +453,7 @@ rmse_c_all<-NULL
 model_c_guess<-runif(length(testset$y))
 
 rmse_c_guess<-create_rmse(model_c_guess, testset$y)
-rmse_c_all<-data.frame(method="Guess", tuned="N", RMSE=rmse_c_guess)
+rmse_c_all<-data.frame(method="Guess", tuned="N/A", RMSE=rmse_c_guess)
 
 
 
@@ -461,8 +463,62 @@ y_c_mean <- mean(trainset$y)
 model_c_avg<-rep(y_mean, length(testset$y))
 
 rmse_c_avg<-create_rmse(model_c_avg, testset$y)
-rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N", RMSE = rmse_c_avg))
+rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N/A", RMSE = rmse_c_avg))
 
 rmse_c_all %>% knitr::kable()
+
+
+# Model Number XX : GamLoess regression model (model_c_loess)  RMSE: rmse_c_loess
+
+model_c_loess<-train(trainset[,-1], trainset$y, method="gamLoess") 
+loess_c_y<-predict(model_c_loess, testset)
+rmse_c_loess<-create_rmse(loess_c_y, testset$y)
+
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="GamLoess", tuned="N", RMSE=rmse_c_loess))
+rmse_c_all %>% knitr::kable()
+
+# Model Number XX : GamLoess regression model (model_c_loess)  RMSE: rmse_c_loess
+
+model_c_loess2<-train(trainset[,-1], trainset$y, method="gamLoess", 
+                      tuneGrid = data.frame(span = seq(0.05, 0.5, 0.025), degree = 1),
+                      trControl = trainControl(method = "repeatedcv", number = 10, repeats=3))
+model_c_loess2$bestTune
+
+ggplot(model_c_loess2, highlight=TRUE)
+loess2_c_y<-predict(model_c_loess2, testset)
+rmse_c_loess2<-create_rmse(loess2_c_y, testset$y)
+
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="GamLoess", tuned="Y", RMSE=rmse_c_loess2))
+rmse_c_all %>% knitr::kable()
+
+
+# Model Number XX : Regression Tree model (model_c_regtree)  RMSE: rmse_c_regtree
+
+
+library(tree)
+
+model_c_regtree <- tree(trainset$y~., trainset)
+regtree_c_y<-predict(model_c_regtree, testset)
+
+rmse_c_regtree<-create_rmse(regtree_c_y, testset$y)
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="Reg Tree", tuned="N", RMSE=rmse_c_regtree))
+rmse_c_all %>% knitr::kable()
+
+# Tuning Model Number XX : Regression Tree Model (model_c_tree2)  RMSE: rmse_c_tree2
+
+model_c_tree2<-train(trainset[,-1], trainset$y, method="rpart", 
+                     tuneGrid = data.frame(cp = seq(0, 0.05, len=25)),
+                     trControl = trainControl(method = "repeatedcv", number = 10, repeats=3),
+) 
+model_c_tree2$bestTune
+
+ggplot(model_c_tree2, highlight=TRUE)
+tree2_c_y<-predict(model_c_tree2, testset)
+
+rmse_c_tree2<-create_rmse(tree2_c_y, testset$y)
+
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="Reg Tree", tuned="Y", RMSE=rmse_c_tree2))
+rmse_c_all %>% knitr::kable()
+
 
 
