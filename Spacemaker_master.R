@@ -1,5 +1,6 @@
 #######################
 
+
 # Spacemaker Noise Surrogate Model
 
 
@@ -31,7 +32,7 @@ library(tidyr)          ## for spread function
 library(caret)
 library(kernlab)
 library(randomForest)
-
+library(tree)
 
 # Projects consists of 5 parts: 
 # PART A: Read Data - 3 Sections
@@ -129,12 +130,18 @@ p <- json_non_specific %>%
 # called graphs
 
 
+p<-json_non_specific%>%
+  group_by(scenario)%>%
+  summarize(avg_frac=mean(fraction_yellow_zone), .groups='drop')%>%arrange(scenario)
+
+
 jpeg('graphs/frac_scenarios.jpg')
 plot(p$avg_frac, xlab="Scenario 1 to 9 in order", 
      ylab="Average Fraction Yellow Zone", 
      main="Fraction Yellow Zone across different Scenarios",
      col = "dark red", cex=1, ylim=c(0,1))
 dev.off()
+
 
 
 
@@ -149,6 +156,13 @@ p1$n <- c(1:500, 1:500)
 
 
 # Plotting buildings against fraction yellow zone across scenarios 6 and 9 
+
+
+p1<-json_non_specific%>%
+  filter(scenario %in% c("scenario_6", "scenario_9"))%>%
+  select(scenario=scenario, fraction=fraction_yellow_zone)
+p1$n<-c(1:500, 1:500)
+
 
 
 jpeg('graphs/frac_bldgs.jpg')
@@ -442,9 +456,8 @@ dev.off()
 
 
 # Listing correlations by absolute value
+
 #cor_table_frac%>%arrange(desc(abs(cor_frac)))
-
-
 
 
 
@@ -513,6 +526,7 @@ test_set_y<-test_final_set[,"fraction_yellow_zone"]
 # the train set and partitions it into train and test dataset
 
 
+
 # 8 models: Average Baseline, Guess, KNN, SVM Radial, Regression Tree, Random Forest, Linear Regression and GamLoess                    
 
 
@@ -534,7 +548,7 @@ rmse_c_all<-NULL
 model_c_guess<-runif(length(testset$y))
 
 rmse_c_guess<-create_rmse(model_c_guess, testset$y)
-rmse_c_all<-data.frame(method="Guess", tuned="N", RMSE=rmse_c_guess)
+rmse_c_all<-data.frame(method="Guess", tuned="N/A", RMSE=rmse_c_guess)
 
 
 
@@ -544,15 +558,68 @@ y_c_mean <- mean(trainset$y)
 model_c_avg<-rep(y_c_mean, length(testset$y))
 
 rmse_c_avg<-create_rmse(model_c_avg, testset$y)
-rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N", RMSE = rmse_c_avg))
+rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N/A", RMSE = rmse_c_avg))
 
 rmse_c_all %>% knitr::kable()
 
 
+# Model Number XX : GamLoess regression model (model_c_loess)  RMSE: rmse_c_loess
 
-# Model Number 3 : Random Forest Tree model (model_rf)  RMSE: RMSE=rmse_c_rf
+model_c_loess<-train(trainset[,-1], trainset$y, method="gamLoess") 
+loess_c_y<-predict(model_c_loess, testset)
+rmse_c_loess<-create_rmse(loess_c_y, testset$y)
+
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="GamLoess", tuned="N", RMSE=rmse_c_loess))
+rmse_c_all %>% knitr::kable()
 
 
+
+# Tuned Model Number XX : GamLoess regression model (model_c_loess)  RMSE: rmse_c_loess
+
+model_c_loess2<-train(trainset[,-1], trainset$y, method="gamLoess", 
+                      tuneGrid = data.frame(span = seq(0.05, 0.5, 0.025), degree = 1),
+                      trControl = trainControl(method = "repeatedcv", number = 10, repeats=3))
+model_c_loess2$bestTune
+
+ggplot(model_c_loess2, highlight=TRUE)
+loess2_c_y<-predict(model_c_loess2, testset)
+rmse_c_loess2<-create_rmse(loess2_c_y, testset$y)
+
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="GamLoess", tuned="Y", RMSE=rmse_c_loess2))
+rmse_c_all %>% knitr::kable()
+
+
+# Model Number XX : Regression Tree model (model_c_regtree)  RMSE: rmse_c_regtree
+
+model_c_regtree <- tree(trainset$y~., trainset)
+regtree_c_y<-predict(model_c_regtree, testset)
+
+rmse_c_regtree<-create_rmse(regtree_c_y, testset$y)
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="Reg Tree", tuned="N", RMSE=rmse_c_regtree))
+rmse_c_all %>% knitr::kable()
+
+# Tuning Model Number XX : Regression Tree Model (model_c_tree2)  RMSE: rmse_c_tree2
+
+model_c_tree2<-train(trainset[,-1], trainset$y, method="rpart", 
+                     tuneGrid = data.frame(cp = seq(0, 0.05, len=25)),
+                     trControl = trainControl(method = "repeatedcv", number = 10, repeats=3),) 
+model_c_tree2$bestTune
+
+ggplot(model_c_tree2, highlight=TRUE)
+
+tree2_c_y<-predict(model_c_tree2, testset)
+
+rmse_c_tree2<-create_rmse(tree2_c_y, testset$y)
+
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="Reg Tree", tuned="Y", RMSE=rmse_c_tree2))
+rmse_c_all %>% knitr::kable()
+
+
+
+
+# Model Number XX : Random Forest Tree model (model_rf)  RMSE: RMSE=rmse_c_rforest
+
+set.seed(123)
 model_c_rforest <- randomForest(trainset$y~., trainset)
 rforest_c_y<-predict(model_c_rforest, testset)
 
@@ -561,7 +628,29 @@ rmse_c_all<-rbind(rmse_c_all, data.frame(method="Random Forest", tuned="N", RMSE
 rmse_c_all %>% knitr::kable()
 
 
-# Model Number 7 : Support Vector Machine model (model_c_svm)  RMSE: rmse_c_svm)
+# Tuning Model Number XX : Random Forest Tree model (model_rf)  RMSE: RMSE=rmse_c_rforest2
+
+plot(model_c_rforest)
+
+t <- tuneRF(trainset[, -1], trainset[, 1],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 400,
+            trace = TRUE,
+            improve = 0.01)
+
+# Tuned model - lowest mtry = 6, ntree = 400
+model_c_rforest2 <- randomForest(trainset$y~., trainset, ntree = 400, mtry = 6)
+
+rforest2_c_y<-predict(model_c_rforest2, testset)
+
+rmse_c_rforest2<-create_rmse(rforest2_c_y, testset$y)
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="Random Forest", tuned="Y", RMSE=rmse_c_rforest2))
+rmse_c_all %>% knitr::kable()
+
+
+
+# Model Number XX : Support Vector Machine model (model_c_svm)  RMSE: rmse_c_svm)
 
 
 model_c_svm<-train(trainset[,-1], trainset$y, method="svmRadial") 
@@ -570,3 +659,17 @@ svm_c_y<-predict(model_c_svm, testset[,-1])
 rmse_c_svm<-create_rmse(svm_c_y, testset$y)
 rmse_c_all<-rbind(rmse_c_all, data.frame(method="SVM Radial", tuned="N", RMSE=rmse_c_svm))
 rmse_c_all %>% knitr::kable()
+
+
+# Tuning Model Number XX : Support Vector Machine model (model_c_svm)  RMSE: rmse_c_svm2)
+
+
+model_c_svm2<-train(trainset[,-1], trainset$y, method="svmRadial",
+                    trControl = trainControl("cv", number = 10),
+                    tuneLength = 10) 
+svm2_c_y<-predict(model_c_svm2, testset[,-1])
+
+rmse_c_svm2<-create_rmse(svm2_c_y, testset$y)
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="SVM Radial", tuned="Y", RMSE=rmse_c_svm2))
+rmse_c_all %>% knitr::kable()
+
