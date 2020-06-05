@@ -1,0 +1,10 @@
+Spacemaker_master: The Master R code for the Noise Surrogate Models
+
+spacemaker_ppt:    PowerPoint Presentation of the project
+
+data/ :            Folder containing datasets and all *npy files containing data
+
+graphs/ :          Folder containing exploration plots generated
+
+
+Other .R files preliminary files used before developing the master file. These files may not be updated.
