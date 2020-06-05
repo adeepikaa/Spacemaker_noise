@@ -1,19 +1,18 @@
 # Spacemaker_noise
-Initial create
 
-To run the files follow this order(any other order will give errors):
+Noise Modeling for Urban Planning Spacemaker AI, Boston MA
 
-spacemaker_read_data.R
+Industry Project for Data Science  & Analytics Certificate Bootcamp with Stack Education
 
-spacemaker_dist_stats.R
+Authors:  Deepika Dittakavi,  Lois Dankwa, Tyler Gmerek
+Mentor:   Karoline Skatteboe, Spacemaker AI
 
-spacemaker_stats.R
+Introduction:
 
-create_train_test_sets.R
+Noise Pollution refers to excessive amounts of noise that interfere with the natural bio-rhythms of everyday life. 
+Spacemaker AI developed technology to discover smarter ways to maximize building potential
+At Spacemaker AI, noise pollution is an important aspect of urban design. A challenge for noise calculation is high computational demand limits, hence surrogate models are important research topics. 
 
-models_set1.R
-
-models_set2.R
-
+This project researches noise surrogate models
 
 
