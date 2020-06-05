@@ -139,6 +139,14 @@ fraction_summary_spec<- json_specific%>%
             bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac], 
             .groups='drop')
 
+fraction_summary_test<- json_test%>%
+  summarise(max_frac=max(fraction_yellow_zone), min_frac=min(fraction_yellow_zone), 
+            src=source_grid_path[fraction_yellow_zone==max_frac], 
+            bldg_max_npy=building_grid_path[fraction_yellow_zone==max_frac], 
+            bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac], 
+            .groups='drop')
+
+
 create_maps <- function(x, y, z, i) {
   input_path1 <- paste("data/", x, sep="")                       #create the path
   print(input_path1)
@@ -169,6 +177,8 @@ create_maps <- function(x, y, z, i) {
 mapply(create_maps, fraction_summary$src, fraction_summary$bldg_max_npy, fraction_summary$bldg_min_npy, fraction_summary$scenario)
 i<-10
 mapply(create_maps, fraction_summary_spec$src, fraction_summary_spec$bldg_max_npy, fraction_summary_spec$bldg_min_npy, i)
+i<-11
+mapply(create_maps, fraction_summary_test$src, fraction_summary_test$bldg_max_npy, fraction_summary_test$bldg_min_npy, i)
 
 
 
