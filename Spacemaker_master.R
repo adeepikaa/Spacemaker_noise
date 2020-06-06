@@ -10,15 +10,15 @@
 
 # Installing and reading packages
 
-# install.packages("jsonlite")
-# install.packages("stringr")
-# install.packages("tidyr")
-# Installing and reading packages
+# install.packages("jsonlite")      ## Reading data
+# install.packages("stringr")       ## Data wrangling
+# install.packages("tidyr")         ## data clean up
+
 # install.packages("ggplot2")       ## ggplot
 # install.packages("RcppCNPy")      ## for npyload
 # install.packages("Matrix")        ## for nnzero
 # install.packages("dplyr")         ## to use %>% 
-#install.packages("caret")
+# install.packages("caret")         ## to partition datasets and train function
 
 
 library(ggplot2)      
@@ -34,18 +34,25 @@ library(kernlab)
 library(randomForest)
 library(tree)
 
-# Projects consists of 5 parts: 
+# Projects consists of 7 parts: 
 # PART A: Read Data - 3 Sections
 # PART B: Data Exploration
 # PART C: Create Features
 # PART D: Feature Exploration - 3 Sections
 # PART E: Create Train/Test Sets
 # PART F: Model Implementation - 8 Models
+# PART G: Apply Best Model on Test Site data
 
 
 ######################################
 #  PART A: Read Data
 #####################################
+
+# Unzip the data file. Code assumes zip file in located in the working directory.
+unzip("data.zip")
+
+# Create empty directory to save all plots
+dir.create("graphs")
 
 
 
@@ -110,8 +117,6 @@ rm(json1, json2, json3)
 #####################################
 #  PART B: Data Exploration
 #####################################
-
-
 
 
 # Using the non-specific data to make plots of some of the 9 scenarios
@@ -188,6 +193,8 @@ fraction_summary<- json_non_specific %>%
             bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac],
             .groups='drop')
 
+#   Site configurations using the specific dataset
+
 fraction_summary_spec<- json_specific%>%
   summarise(max_frac=max(fraction_yellow_zone), min_frac=min(fraction_yellow_zone), 
             src=source_grid_path[fraction_yellow_zone==max_frac], 
@@ -195,14 +202,13 @@ fraction_summary_spec<- json_specific%>%
             bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac], 
             .groups='drop')
 
-
+#   Site configurations using the test dataset
 fraction_summary_test<- json_test%>%
   summarise(max_frac=max(fraction_yellow_zone), min_frac=min(fraction_yellow_zone), 
             src=source_grid_path[fraction_yellow_zone==max_frac], 
             bldg_max_npy=building_grid_path[fraction_yellow_zone==max_frac], 
             bldg_min_npy=building_grid_path[fraction_yellow_zone==min_frac], 
             .groups='drop')
-
 
 
 
@@ -238,6 +244,7 @@ create_maps <- function(x, y, z, i) {
 }
 
 
+# i is used to create the names of the images saved
 
 mapply(create_maps, fraction_summary$src, fraction_summary$bldg_max_npy, fraction_summary$bldg_min_npy, fraction_summary$scenario)
 i<-10
@@ -521,7 +528,7 @@ trainset<-combined_set[-t_index,]
 test_set_x<-test_final_set[,xvalues]
 test_set_y<-test_final_set[,"fraction_yellow_zone"]
 
-#rm(t_index, set_x, set_y, col, p, p1)
+rm(t_index, set_x, set_y, col, p, p1, i)
 
 
 
@@ -563,6 +570,8 @@ rmse_c_all<-NULL
 model_c_guess<-runif(length(testset$y))
 
 rmse_c_guess<-create_rmse(model_c_guess, testset$y)
+
+# create a table to store all model results for comparison
 rmse_c_all<-data.frame(method="Guess", tuned="N/A", RMSE=rmse_c_guess)
 
 
@@ -573,8 +582,11 @@ y_c_mean <- mean(trainset$y)
 model_c_avg<-rep(y_c_mean, length(testset$y))
 
 rmse_c_avg<-create_rmse(model_c_avg, testset$y)
+
+# each rbind statement appends the new RMSE result at the end
 rmse_c_all<-rbind(rmse_c_all, data.frame(method ="Average", tuned ="N/A", RMSE = rmse_c_avg))
 
+# kable() from knitr package makes the summary appear as an aligned table, which is easy to read.
 rmse_c_all %>% knitr::kable()
 
 
@@ -594,7 +606,7 @@ rmse_c_all %>% knitr::kable()
 model_c_lm<-lm(trainset$y ~ ., data=trainset)
 lm_c_y<-predict(model_c_lm, testset)
 rmse_c_lm<-create_rmse(lm_c_y, testset$y)
-rmse_c_all<-rbind(rmse_c_all, data.frame(method="Linear Reg.", tuned="N", RMSE=rmse_c_lm))
+rmse_c_all<-rbind(rmse_c_all, data.frame(method="Linear Reg.", tuned="N/A", RMSE=rmse_c_lm))
 rmse_c_all %>% knitr::kable()
 
 
@@ -613,7 +625,7 @@ rmse_c_all %>% knitr::kable()
 #                         RMSE: rmse_c_loess2
 
 model_c_loess2<-train(trainset[,-1], trainset$y, method="gamLoess", 
-                      tuneGrid = data.frame(span = seq(0.05, 0.5, 0.025), degree = 1),
+                      tuneGrid = data.frame(span = seq(0.025, 0.75, 0.025), degree = 1),
                       trControl = trainControl(method = "repeatedcv", number = 10, repeats=3))
 model_c_loess2$bestTune
 
@@ -638,7 +650,7 @@ rmse_c_all %>% knitr::kable()
 # Tuning Model Number 6b : Regression Tree Model (model_c_tree2)  with fine tuning for complex parameter cp
 #                          RMSE: rmse_c_tree2
 
-set.seed(123)
+
 model_c_tree2<-train(trainset[,-1], trainset$y, method="rpart", 
                      tuneGrid = data.frame(cp = seq(0, 0.05, len=25)),
                      trControl = trainControl(method = "repeatedcv", number = 10, repeats=3),) 
@@ -717,15 +729,23 @@ rmse_c_all %>% knitr::kable()
 #  PART G: Model Performance on final Test Site Data
 ####################################################
 
+# Using the Test site data to predict the fraction yellow zone
 site_y<-predict(model_c_rforest2, test_set_x)
-rmse_site<-create_rmse(site_y, test_set_y)
 
+# Final RMSE results:
+rmse_site<-create_rmse(site_y, test_set_y)
+rmse_site
+
+# Ensemble Model: Average model using Regression Tree, SVM and Random Forest
+# predict fraction yellow zone with the 3 models
 site_y_rf<-predict(model_c_rforest2, test_set_x)
 site_y_tree<-predict(model_c_tree2, test_set_x)
 site_y_svm<-predict(model_c_svm2, test_set_x)
 
+# Compute new fraction yellow zone as average of the above three predictions
 site_avg_y<-(site_y_rf+site_y_tree+site_y_svm)/3
 
+# Final Ensemble Model results
 rmse_site_avg<-create_rmse(site_avg_y, test_set_y)
-
+rmse_site_avg
 
