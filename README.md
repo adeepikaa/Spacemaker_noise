@@ -5,6 +5,7 @@ Noise Modeling for Urban Planning Spacemaker AI, Boston MA
 Industry Project for Data Science  & Analytics Certificate Bootcamp with Stack Education
 
 Authors:  Deepika Dittakavi,  Lois Dankwa, Tyler Gmerek
+
 Mentor:   Karoline Skatteboe, Spacemaker AI
 
 Introduction:
