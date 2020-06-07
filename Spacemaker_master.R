@@ -141,10 +141,14 @@ p<-json_non_specific%>%
 
 
 jpeg('graphs/frac_scenarios.jpg')
-plot(p$avg_frac, xlab="Scenario 1 to 9 in order", 
-     ylab="Average Fraction Yellow Zone", 
-     main="Fraction Yellow Zone across different Scenarios",
-     col = "dark red", cex=1, ylim=c(0,1))
+ggplot(p,aes(scenario,avg_frac, fill = scenario))+
+  geom_col()+
+  xlab("")+
+  ylab("Average Fraction Yellow Zone")+
+  ggtitle("Fraction Yellow Zone Across Different Scenarios")+
+  theme(legend.position = "none")+
+  theme(axis.text.x = element_text(face = "bold",
+                                   size = 10, angle = 45, hjust = 1, vjust = 1))
 dev.off()
 
 
@@ -461,14 +465,24 @@ colnames(cor_table_frac)<-c("cor_frac","feature")
 
 jpeg('graphs/cor_frac.jpg')
 cor_table_frac%>%
-  ggplot(aes(factor(feature), cor_frac))+
-  geom_point(colour = "black", size = 4.5) +
-  geom_point(colour = "hot pink", size = 4) +
-  geom_point(colour = "black", size = 1) +
+  ggplot(aes(factor(feature),cor_frac, colour=cor_frac))+
+  geom_point(size =4)+
+  scale_color_gradient2(cor_table_frac$cor_frac, low= "blue", mid="white", high= "red")+
+  theme(panel.background = element_rect(fill = "slategrey",
+                                        colour = "slategrey",
+                                        size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "white"),
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "white")
+  )+
+  theme(legend.title = element_blank())+
+  labs(fill = "Correlation")+
   xlab("Features")+
   ylab("Correlation")+
-  ggtitle("Correlation across different features")+
-  theme(axis.text.x=element_text(angle=90, hjust=1))
+  ggtitle("Correlation Across Different Features")+
+  theme(axis.text.x = element_text(face = "bold",
+                                   size = 10, angle = 45, hjust = 1))
 dev.off()
 
 col<- colorRampPalette(c("blue", "white", "red"))(20)
