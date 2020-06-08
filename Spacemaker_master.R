@@ -717,6 +717,22 @@ rmse_c_all<-rbind(rmse_c_all, data.frame(method="Random Forest", tuned="N", RMSE
 rmse_c_all %>% knitr::kable()
 
 
+# Variable Importance Plot
+imp <- as.data.frame(varImpPlot(model_c_rforest))
+imp$varnames <- rownames(imp) # row names to column
+rownames(imp) <- NULL  
+
+jpeg('graphs/forest_varImp.jpg')
+ggplot(imp, aes(x=reorder(varnames, -IncNodePurity), weight=IncNodePurity, fill=varnames)) + 
+  geom_bar() +
+  scale_fill_discrete(name="Variable Group") +
+  ylab("IncNodePurity") +
+  xlab("Variable Name") +
+  theme(axis.text.x = element_text(face = "bold", size = 10, angle = 45, hjust = 1))+
+  theme(legend.position = "none")+
+  ggtitle("Variable Importance of Random Forest")
+dev.off()
+
 # Model Number 8b : Random Forest Tree model (model_rf) with fine tuning for hyper parameters: mtry, ntree
 #                   RMSE: RMSE=rmse_c_rforest2
 
@@ -737,6 +753,7 @@ rforest2_c_y<-predict(model_c_rforest2, testset)
 rmse_c_rforest2<-create_rmse(rforest2_c_y, testset$y)
 rmse_c_all<-rbind(rmse_c_all, data.frame(method="Random Forest", tuned="Y", RMSE=rmse_c_rforest2))
 rmse_c_all %>% knitr::kable()
+
 
 
 ####################################################
