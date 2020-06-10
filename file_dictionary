@@ -1,15 +1,17 @@
 
 
-Spacemaker_master: The Master R code for the Noise Surrogate Models
+Spacemaker_master:       The Master R code for the Noise Surrogate Models
 
-spacemaker_ppt:    PowerPoint Presentation of the project
+Spacemaker_proj.pptx:    PowerPoint Presentation of the project
 
-data.zip:          Zip file containing the datasets and npy files for configurations. 
-                   Code assumes zip file is in working directory
+Spacemaker_summary.pdf:  Executive Summary of the project
 
-data/ :            Folder containing datasets and few *npy files containing data
+data.zip:                Zip file containing the datasets and npy files for configurations. 
+                         Code assumes zip file is in working directory
 
-graphs/ :          Folder containing exploration plots generated. 
+data/ :                  Folder containing datasets and few *npy files containing data
+
+graphs/ :                Folder containing exploration plots generated. 
 
 
 This project code was done in a modular fashion before combining into a final code 
