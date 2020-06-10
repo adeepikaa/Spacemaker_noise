@@ -19,7 +19,9 @@
 # install.packages("Matrix")        ## for nnzero
 # install.packages("dplyr")         ## to use %>% 
 # install.packages("caret")         ## to partition datasets and train function
-
+# install.packages("kernlab")
+# install.packages("tree")
+# install.packages("gam")
 
 library(ggplot2)      
 library(RcppCNPy)      
@@ -33,6 +35,7 @@ library(caret)
 library(kernlab)
 library(randomForest)
 library(tree)
+library(gam)
 
 # Projects consists of 7 parts: 
 # PART A: Read Data - 3 Sections
@@ -154,22 +157,12 @@ dev.off()
 
 
 
-# Plotting only scenario 6 and 9 as they show much variation
-
-p1  <- json_non_specific %>%
-      filter(scenario %in% c("scenario_6", "scenario_9")) %>%
-      summarize(scenario = scenario, fraction = fraction_yellow_zone)
-p1$n <- c(1:500, 1:500)
-
-
-
-
 # Plotting buildings against fraction yellow zone across scenarios 6 and 9 
 
 
 p1<-json_non_specific%>%
   filter(scenario %in% c("scenario_6", "scenario_9"))%>%
-  select(scenario=scenario, fraction=fraction_yellow_zone)
+  select(scenario, fraction_yellow_zone)
 p1$n<-c(1:500, 1:500)
 
 
