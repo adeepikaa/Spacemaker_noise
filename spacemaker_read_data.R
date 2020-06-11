@@ -1,25 +1,47 @@
-#######################
-
-
-
-# This file reads all the data related to the Spacemaker noise surrogate model from the data and 
-# solution folders
-
+#####################
+# Packages & Libraries
+###################
 
 # Installing and reading packages
 
-# install.packages("jsonlite")
-# install.packages("stringr")
-# install.packages("tidyr")
+# install.packages("jsonlite")      ## Reading data
+# install.packages("stringr")       ## Data wrangling
+# install.packages("tidyr")         ## data clean up
 
+# install.packages("ggplot2")       ## ggplot
+# install.packages("RcppCNPy")      ## for npyload
+# install.packages("Matrix")        ## for nnzero
+# install.packages("dplyr")         ## to use %>% 
+# install.packages("caret")         ## to partition datasets and train function
+# install.packages("kernlab")
+# install.packages("tree")
+# install.packages("gam")
+
+library(ggplot2)      
+library(RcppCNPy)      
+library(Matrix)        
+library(dplyr)         
 library(jsonlite)       ## for json read
 library(stringr)        ## for str split
 library(tidyr)          ## for spread function
 
+library(caret)
+library(kernlab)
+library(randomForest)
+library(tree)
+library(gam)
 
-#PART 1: 
 
-#Reading the non-specific training data
+# Unzip the data file. Code assumes zip file in located in the working directory.
+unzip("data.zip")
+
+# Create empty directory to save all plots
+dir.create("graphs")
+
+
+
+# Section 1 of 3: Reading the non-specific training data
+
 
 json1<-fromJSON(txt="data/non_specific_training_data.json")
 
@@ -45,9 +67,8 @@ json_non_specific$fraction_yellow_zone <- as.numeric(as.character(json_non_speci
 
 
 
-# PART 2: 
+# Section 2 of 3:  Reading the specific training data
 
-# Reading the specific training data
 
 json2<-fromJSON(txt="data/specific_training_data.json")
 json2<-data.frame(number = unlist(json2))
@@ -59,9 +80,9 @@ json_specific$fraction_yellow_zone <- as.numeric(as.character(json_specific$frac
 
 
 
-# PART 3: 
 
-# Reading the test data
+# Section 3 of 3:  Reading the test data
+
 
 json3<-fromJSON(txt="data/test_data.json")
 json3<-data.frame(number = unlist(json3))
@@ -72,5 +93,7 @@ json_test<-spread(json3, path, number)
 json_test$fraction_yellow_zone <- as.numeric(as.character(json_test$fraction_yellow_zone))
 
 
-
 rm(json1, json2, json3)
+
+
+
