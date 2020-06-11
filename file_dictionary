@@ -16,4 +16,13 @@ graphs/ :                Folder containing exploration plots generated.
 
 This project code was done in a modular fashion before combining into a final code 
 to minimize accidental errors and collaboration. Hence, all other *R files are the modules
-used before developing the master file. These files may not be updated.
+used before developing the master file. They need to be run in the follwoing order.
+
+spacemaker_read_data.R:  Code for data reading and wrangling
+data_explore.R:          Code for exploring given data
+spacemaker_dist_stats.R: Code to create features
+feature_explore.R:       Code to explore features
+create_train_test_sets.R:Code to create train and test sets
+model_results.R:         Code to run different models and final results
+
+
