@@ -6,6 +6,8 @@ Spacemaker_proj.pptx:    PowerPoint Presentation of the project
 
 Spacemaker_summary.pdf:  Executive Summary of the project
 
+spacemaker_pdf.pdf:      PDF file on the Powerpoint presentation
+
 data.zip:                Zip file containing the datasets and npy files for configurations. 
                          Code assumes zip file is in working directory
 
